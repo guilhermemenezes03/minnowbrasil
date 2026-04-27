@@ -1,6 +1,8 @@
 #include "util/address.hh"
+#include "util/address.cc"
 #include "util/socket.hh"
 #include "util/file_descriptor.hh"
+#include "util/socket.cc"
 
 #include <iostream>
 #include <stdexcept>
