@@ -32,9 +32,9 @@ string get_URL( const string& host, const string& path, const string& service = 
   const string normalized_path = normalize_path( path );
 
 // 1. Create an address for the web server.
-  const auto address = Address::for_service( host, service, AF_INET, SOCK_STREAM );
+  const auto address = minnow::Address address( host, service );;
 // 2. Connect a TCP socket to that address.
-  auto socket = TCPSocket::connect_to( address );
+  auto socket = minnow::TCPSocket::connect_to( address );
 // 3. Send an HTTP request.
 std::string request = "GET " + normalized_path + " HTTP/1.1\r\n"
                      + "Host: " + host + "\r\n"
