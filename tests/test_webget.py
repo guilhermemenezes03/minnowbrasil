@@ -7,12 +7,12 @@ import threading
 
 
 EXPECTED_RESPONSE = (
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Length: 20\r\n"
-    "Content-Type: text/plain\r\n"
-    "Connection: close\r\n"
-    "\r\n"
-    "Hello from fixture!\n"
+    b"HTTP/1.1 200 OK\r\n"
+    b"Content-Length: 20\r\n"
+    b"Content-Type: text/plain\r\n"
+    b"Connection: close\r\n"
+    b"\r\n"
+    b"Hello from fixture!\n"
 )
 
 
@@ -38,7 +38,7 @@ def serve_one(server_socket, error_holder):
                 if line not in request_text:
                     raise AssertionError(f"request missing line: {line!r}\nrequest was:\n{request_text}")
 
-            connection.sendall(EXPECTED_RESPONSE.encode("latin1"))
+            connection.sendall(EXPECTED_RESPONSE)
     except Exception as exc:  # pragma: no cover - diagnostic path
         error_holder.append(exc)
 
@@ -63,7 +63,6 @@ def main() -> int:
         result = subprocess.run(
             [webget_path, "127.0.0.1", "/hello", str(port)],
             capture_output=True,
-            text=True,
             check=False,
         )
 
@@ -74,15 +73,15 @@ def main() -> int:
         return 1
 
     if result.returncode != 0:
-        print(result.stderr, file=sys.stderr)
+        print(result.stderr.decode("latin1"), file=sys.stderr)
         return 1
 
     if result.stdout != EXPECTED_RESPONSE:
         print("webget output mismatch", file=sys.stderr)
         print("expected:", file=sys.stderr)
-        print(EXPECTED_RESPONSE, file=sys.stderr)
+        print(EXPECTED_RESPONSE.decode("latin1"), file=sys.stderr)
         print("got:", file=sys.stderr)
-        print(result.stdout, file=sys.stderr)
+        print(result.stdout.decode("latin1"), file=sys.stderr)
         return 1
 
     return 0
@@ -90,4 +89,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
