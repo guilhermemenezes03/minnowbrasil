@@ -1,5 +1,6 @@
 #include "util/address.hh"
 #include "util/socket.hh"
+#include "util/file_descriptor.hh"
 
 #include <iostream>
 #include <stdexcept>
@@ -28,30 +29,30 @@ string get_URL( const string& host, const string& path, const string& service = 
 {
   const string normalized_path = normalize_path( path );
 
-  // TODO: implemente um cliente HTTP/1.1 minimo.
-  //
-  // O objetivo e:
-  // 1. Resolver o endereco com Address(host, service).
-  // 2. Abrir a conexao usando TCPSocket::connect_to(...).
-  // 3. Enviar uma requisicao HTTP parecida com:
-  //
-  //    GET /algum/caminho HTTP/1.1\r\n
-  //    Host: exemplo.com\r\n
-  //    Connection: close\r\n
-  //    \r\n
-  //
-  // 4. Ler do socket ate EOF.
-  // 5. Retornar a resposta completa como string.
-  //
-  // Dicas:
-  // - Use \r\n em todas as linhas do HTTP.
-  // - Uma unica leitura nao basta.
-  // - "Connection: close" e o jeito mais simples de saber quando o servidor terminou.
-  (void)host;
-  (void)normalized_path;
-  (void)service;
+// 1. Create an address for the web server.
+  const auto address = Address::for_service( host, service, AF_INET, SOCK_STREAM );
+// 2. Connect a TCP socket to that address.
+  auto socket = TCPSocket::connect_to( address );
+// 3. Send an HTTP request.
+std::string request = "GET " + normalized_path + " HTTP/1.1\r\n"
+                     + "Host: " + host + "\r\n"
+                     + "Connection: close\r\n"
+                     + "\r\n";
+    socket.write_all( request );
+// 4. Read the response until EOF.
+auto response = string();
 
-  throw runtime_error( "TODO: implemente get_URL() em apps/webget.cc" );
+    while (true) {
+        const auto chunk = socket.read_some();
+        if (chunk.empty()) {
+            break; // EOF reached
+        }
+        response += chunk;
+    }
+
+// 5. return the response.
+    return response;
+
 }
 
 int main( int argc, char* argv[] )
