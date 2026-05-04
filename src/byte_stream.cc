@@ -24,15 +24,16 @@ void ByteStream::push( string data )
   if ( closed_ && !data.empty() ) {
     throw logic_error( "cannot push into a closed ByteStream" );
   }
-
-  // TODO: implemente o comportamento correto do fluxo.
-  //
-  // Dicas:
-  // 1. So aceite ate available_capacity() bytes.
-  // 2. Atualize bytes_pushed_ com o numero de bytes realmente aceitos.
-  // 3. Se head_ > 0, compacte storage_ antes de anexar novos dados.
-  // 4. A capacidade limita os bytes armazenados agora, nao o total historico.
-  (void)data;
+  if ( available_capacity() == 0 ) {
+    return; // No more capacity to accept new data.
+  } else if ( data.size() > available_capacity() ) {
+    data.resize( available_capacity() ); // Truncate data to fit available capacity.
+   }
+    if ( head_ > 0 ) {
+      compact(); // Compact storage before appending new data.
+    }
+    storage_ += data; // Append new data to storage.
+    bytes_pushed_ = bytes_pushed_ + data.size();
 }
 
 void ByteStream::close()
@@ -57,21 +58,24 @@ uint64_t ByteStream::bytes_pushed() const
 
 string_view ByteStream::peek() const
 {
-  // TODO: devolva uma view dos bytes atualmente disponiveis para leitura.
-  return {};
+  if ( bytes_buffered() == 0 ) {
+    return {};
+  }
+    return string_view( storage_ ).substr( head_ );
 }
 
 void ByteStream::pop( const uint64_t len )
 {
-  // TODO: remova ate len bytes do inicio do fluxo.
-  //
-  // Dicas:
-  // 1. Nunca avance mais do que bytes_buffered().
-  // 2. Atualize bytes_popped_.
-  // 3. Quando todo o buffer tiver sido consumido, limpe storage_ e zere head_.
-  // 4. Se quiser, compacte quando head_ ficar grande em relacao ao tamanho total.
-  (void)len;
-}
+    const uint64_t amount = min( len, bytes_buffered());
+    head_ += amount; // Move head forward by amount bytes.
+    bytes_popped_ += amount; // Update total bytes popped.
+    if ( head_ >= storage_.size() ) {
+      storage_.clear(); // Clear storage when all buffered data has been popped.
+      head_ = 0; // Reset head to the beginning of the storage.
+    } else if ( head_ > storage_.size() / 2 ) {
+      compact(); // Compact storage if head has moved past half of the current size.
+    }
+  }
 
 bool ByteStream::is_finished() const
 {
